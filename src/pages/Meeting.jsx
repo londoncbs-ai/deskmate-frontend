@@ -30,7 +30,7 @@ export default function Meeting() {
   const [thinking, setThinking] = useState(null)
   const [doing, setDoing] = useState(null) // {agent_id, text}
   const [speaking, setSpeaking] = useState(null)
-  const [panel, setPanel] = useState('chat')
+  const [panel, setPanel] = useState(null)
   const [captions, setCaptions] = useState(true)
   const [handsFree, setHandsFree] = useState(false)
   const [rec, setRec] = useState(false)
@@ -197,7 +197,14 @@ export default function Meeting() {
   }
 
   return (
-    <div className="meet">
+    <div className="meet meet-polished">
+      <header className="meet-topbar">
+        <div className="meet-identity"><span className="meet-mark">D</span><span><b>{m.title}</b><small>{agents.map((a) => a.name).join(' · ')}</small></span></div>
+        <div className="meet-top-actions"><span className="meet-live"><i /> {mode === 'starting' ? 'Connecting' : 'In meeting'}</span><span className="meet-duration">{mm}</span>
+          <button className={`meet-top-btn ${panel === 'people' ? 'selected' : ''}`} onClick={() => setPanel(panel === 'people' ? null : 'people')} title="People"><Icon n="people" size={18} /><span>People</span></button>
+          <button className={`meet-top-btn ${panel === 'chat' ? 'selected' : ''}`} onClick={() => setPanel(panel === 'chat' ? null : 'chat')} title="Meeting chat"><Icon n="chat" size={18} /><span>Chat</span></button>
+        </div>
+      </header>
       <div className="meet-main">
         <div className={`tiles n${agents.length + 1}`}>
           {agents.map((a) => (
@@ -216,9 +223,9 @@ export default function Meeting() {
 
         {panel && (
           <aside className="side">
-            <header>
-              <b>{panel === 'chat' ? 'Meeting chat' : 'People'}</b>
-              <button className="x" onClick={() => setPanel(null)}>✕</button>
+            <header className="meet-panel-head">
+              <span><b>{panel === 'chat' ? 'Meeting chat' : 'People'}</b><small>{panel === 'chat' ? 'Messages stay with this meeting' : `${agents.length + 1} people here`}</small></span>
+              <button className="x" onClick={() => setPanel(null)} aria-label="Close panel">✕</button>
             </header>
             {panel === 'people' ? (
               <ul className="ppl">
@@ -261,8 +268,7 @@ export default function Meeting() {
       {handsFree && <div className="meet-listening-note">{muted ? "Microphone muted" : "Microphone on — nearby voices may be heard. Mute for side conversations."}</div>}
       {err && <div className="meet-err" onClick={() => setErr('')}>{err}</div>}
 
-      <footer className="bar">
-        <div className="left"><span>{mm}</span><span className="sep">|</span><span>{m.title}</span>{mode === 'starting' && <span className="sep">Connecting voices…</span>}</div>
+      <footer className="bar meet-controls">
         <div className="mid">
           {mode === 'live' && <>
             {!handsFree ? <button className={`btn ${rec ? 'solid' : ''}`} style={{ touchAction: 'none', userSelect: 'none' }}
@@ -274,14 +280,11 @@ export default function Meeting() {
               : <button className={`cbtn ${muted ? 'off' : 'on'}`} onClick={micClick} aria-label={muted ? 'Unmute microphone' : 'Mute microphone'} title={muted ? 'Unmute microphone' : 'Mute microphone'}><Icon n="mic" /></button>}
             <label className="small"><input type="checkbox" checked={handsFree} onChange={(e) => { const value = e.target.checked; setHandsFree(value); setMuted(true); rtRef.current?.setHandsFree(value) }} /> Hands-free</label>
           </>}
-          <button className="btn" onClick={() => { rtRef.current?.interruptAll(); interrupt(); abortRef.current?.abort() }}>Stop speaking</button>
+          <button className="cbtn" onClick={() => { rtRef.current?.interruptAll(); interrupt(); abortRef.current?.abort() }} title="Stop current reply" aria-label="Stop speaking"><span className="meet-stop-icon" /></button>
           <button className={`cbtn ${captions ? 'on' : ''}`} onClick={() => setCaptions(!captions)} title="Captions"><Icon n="cc" /></button>
-          <button className="cbtn end" onClick={leave} title="Leave meeting"><Icon n="end" /></button>
+          <button className="cbtn end" onClick={leave} title="Leave meeting" aria-label="Leave meeting"><Icon n="end" /></button>
         </div>
-        <div className="right">
-          <button className={`cbtn plain ${panel === 'people' ? 'on' : ''}`} onClick={() => setPanel(panel === 'people' ? null : 'people')} title="People"><Icon n="people" /></button>
-          <button className={`cbtn plain ${panel === 'chat' ? 'on' : ''}`} onClick={() => setPanel(panel === 'chat' ? null : 'chat')} title="Chat"><Icon n="chat" /></button>
-        </div>
+        <div className="right"><span>{mode === 'live' ? (rec ? 'Listening · release to send' : 'Mic off') : mode === 'starting' ? 'Joining…' : 'Text mode'}</span></div>
       </footer>
     </div>
   )
