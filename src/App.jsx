@@ -1,3 +1,4 @@
+import WorkspaceSwitcher from './WorkspaceSwitcher'
 import { Component, lazy, Suspense, useEffect, useState } from 'react'
 import { Link, Navigate, NavLink, Route, Routes, useLocation } from 'react-router-dom'
 import { api, usePoll } from './api'
@@ -102,9 +103,10 @@ function Shell() {
     <div className="shell">
       <aside className="sidebar">
         <Link to="/" className="brand"><span className="mark"><i /></span><span className="t"><b>Deskmates</b>{company?.name && <small>{company.name}</small>}</span></Link>
+        <WorkspaceSwitcher />
         <nav className="nav" aria-label="Main">
           {link('/', 'users', 'Team')}
-          {link('/people', 'person', 'People')}
+          {!auth.subworkspace && link('/people', 'person', 'People')}
           {link('/projects', 'projects', 'Projects')}
           {link('/files', 'folder', 'Files')}
           {link('/inbox', 'inbox', 'Inbox', badge)}
@@ -189,6 +191,7 @@ function MemberShell() {
     <div className="shell member-shell">
       <aside className="sidebar">
         <Link to="/" className="brand"><span className="mark"><i /></span><span className="t"><b>Deskmates</b>{auth.workspace?.name && <small>{auth.workspace.name}</small>}</span></Link>
+        <WorkspaceSwitcher />
         <nav className="nav" aria-label="Main">
           {link('/', 'person', 'My work')}
           {link('/projects', 'projects', 'Projects')}

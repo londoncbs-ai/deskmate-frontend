@@ -25,6 +25,8 @@ export default function TeamChat() {
   const lock = useRef(false)
   const bottom = useRef(null)
   const picker = useRef(null)
+  const composer = useRef(null)
+  useEffect(() => { if (composer.current) { composer.current.style.height = 'auto'; composer.current.style.height = `${Math.min(240, Math.max(112, composer.current.scrollHeight))}px` } }, [text, room?.id])
   useEffect(() => {
     let alive = true
     setRoom(null); setPartial(null); setError(''); setText('')
@@ -55,7 +57,7 @@ export default function TeamChat() {
         if (ev.type === 'error') setError(ev.message)
       }, abort.current.signal)
       await refreshRoom()
-    } catch (e) { if (e.name !== 'AbortError') setError(e.message) }
+    } catch (e) { if (e.name !== 'AbortError') { setError(e.message); setText(message) } }
     finally { lock.current = false; setBusy(false); setPartial(null) }
   }
   async function upload(list) {
@@ -97,6 +99,7 @@ export default function TeamChat() {
         <button className="tc-create-link" onClick={() => { setSelected([]); setParams({}) }}>＋ <span>Start a new chat</span></button>
       </aside>
       <section className="team-chat-room">
+        {!room && error && <div className="tc-error" role="alert">{error}</div>}
         {!id ? <div className="tc-new-room"><span className="tc-eyebrow">NEW CONVERSATION</span><h2>Who would you like to chat with?</h2><p>Pick one or more teammates. You can share files in the conversation.</p>
           <div className="tc-agent-picker">{(agents || []).map((a) => <label key={a.id} className={selected.includes(a.id) ? 'picked' : ''}><input type="checkbox" checked={selected.includes(a.id)} disabled={!selected.includes(a.id) && selected.length >= 6} onChange={(e) => setSelected((s) => e.target.checked ? [...s, a.id] : s.filter((i) => i !== a.id))} /><Avatar agent={a} size={36} /><span><b>{a.name}</b><small>{a.role}</small></span><i>{selected.includes(a.id) ? '✓' : ''}</i></label>)}</div>
           {agents?.length === 0 && <p><Link to="/">Add teammates first</Link></p>}<button className="btn solid tc-start" onClick={create} disabled={busy || !selected.length}>Start chat</button>
@@ -115,8 +118,8 @@ export default function TeamChat() {
             <div ref={bottom}/>
           </div>
           {error && <div className="tc-error" role="alert">{error}<button onClick={() => setError('')} aria-label="Dismiss">×</button></div>}
-          <form className="tc-compose" onSubmit={send}><div className="tc-compose-box"><textarea aria-label="Message your teammates" placeholder={room.status === 'ended' ? 'This chat has ended' : 'Write a message…'} value={text} onChange={(e) => setText(e.target.value)} rows={2} maxLength={4000} disabled={busy || room.status === 'ended'} onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); e.currentTarget.form.requestSubmit() } }}/>
-            <div className="tc-compose-actions"><input ref={picker} type="file" multiple accept=".pdf,.txt,.md,.json,.csv,.xlsx,.xls" hidden onChange={(e) => upload(e.target.files)}/><button type="button" className="tc-attach" onClick={() => picker.current?.click()} disabled={uploading || room.status === 'ended'} title="Attach a file">{uploading ? '…' : '＋'} <span>{uploading ? 'Uploading' : 'Attach'}</span></button><span className="tc-hint">Enter to send · Shift + Enter for a new line</span><button className="tc-send" disabled={busy || !text.trim() || room.status === 'ended'} aria-label="Send message">↑</button></div>
+          <form className="tc-compose" onSubmit={send}><div className="tc-compose-box"><textarea ref={composer} aria-label="Message your teammates" placeholder={room.status === 'ended' ? 'This chat has ended' : 'Write a message…'} value={text} onChange={(e) => setText(e.target.value)} rows={4} maxLength={4000} disabled={room.status === 'ended'} onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); e.currentTarget.form.requestSubmit() } }}/>
+            <div className="tc-compose-actions"><input ref={picker} type="file" multiple accept=".pdf,.txt,.md,.json,.csv,.xlsx,.xls" hidden onChange={(e) => upload(e.target.files)}/><button type="button" className="tc-attach" onClick={() => picker.current?.click()} disabled={uploading || room.status === 'ended'} title="Attach a file">{uploading ? '…' : '＋'} <span>{uploading ? 'Uploading' : 'Attach'}</span></button><span className="tc-hint">{text.length > 3500 ? `${text.length}/4000 · ` : ''}Enter to send · Shift + Enter for a new line</span><button className="tc-send" disabled={busy || !text.trim() || room.status === 'ended'} aria-label="Send message">↑</button></div>
           </div></form>
         </>}
       </section>
