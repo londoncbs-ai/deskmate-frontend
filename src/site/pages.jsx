@@ -222,14 +222,14 @@ export function Home({ st }) {
             <li><Icon name="check" size={15} /> Emails can wait for your approval</li>
           </ul>
           </> : <>
-          <span className="tutor-kicker">RESEARCH-LED. BUILT FOR LEARNING.</span>
-          <h1 className="tutor-title">An AI tutor.<br />An entire teaching<br /><em>engine.</em></h1>
-          <p className="s-lead tutor-lead">Research becomes a lecture. A question becomes a conversation. Meet the agent that brings academic knowledge, powerful tools and personal learning together.</p>
-          <div className="s-cta-row tutor-ctas"><Primary st={st}>Teacher workspace</Primary><Link className="s-btn big tutor-secondary" to="/product">Explore the agent <Icon name="arrow" size={16} /></Link></div>
-          <ul className="s-trust tutor-trust" aria-label="Key points">
-            <li><Icon name="check" size={15} /> Research-grounded</li>
-            <li><Icon name="check" size={15} /> Multimodal</li>
-            <li><Icon name="check" size={15} /> Built for educators</li>
+          <span className="employee-kicker">AI EMPLOYEES. BUILT FOR WORK.</span>
+          <h1 className="employee-title">Your AI team.<br />An entire workforce<br /><em>at your desk.</em></h1>
+          <p className="s-lead employee-lead">Meet the AI employees who take work off your plate. Give each one a role, tools and a desk of their own to handle everyday tasks and keep your business moving.</p>
+          <div className="s-cta-row employee-ctas"><Primary st={st}>Meet your team</Primary><Link className="s-btn big employee-secondary" to="/product">Explore Deskmates <Icon name="arrow" size={16} /></Link></div>
+          <ul className="s-trust employee-trust" aria-label="Key points">
+            <li><Icon name="check" size={15} /> Your own AI employees</li>
+            <li><Icon name="check" size={15} /> Connected to your tools</li>
+            <li><Icon name="check" size={15} /> You stay in control</li>
           </ul>
           </>}
         </div>
