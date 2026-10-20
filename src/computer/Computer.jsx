@@ -246,7 +246,7 @@ export default function Computer({ a, startFull = false }) {
       case 'tasks': return <div className="ox-fill ox-pad"><Tasks team={team || []} initialAgent={String(id)} fixed /><SceneBanner scene={s} /></div>
       case 'calendar': return <CalendarApp id={id} scene={s} />
       case 'text': return <TextApp scene={s} openDoc={openDoc} name={a.name} />
-      case 'web': return <BrowserApp id={id} name={a.name} feed={feed} scene={s} />
+      case 'web': return <BrowserApp feed={feed} scene={s} />
       case 'phone': return <PhoneApp id={id} scene={s} />
       case 'notes': return <NotesApp id={id} scene={s} />
       case 'projects': return <div className="ox-fill"><ProjectsApp id={id} /><SceneBanner scene={s} /></div>

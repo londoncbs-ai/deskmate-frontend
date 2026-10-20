@@ -1,6 +1,6 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { ago, api, usePoll } from '../api'
+import { api, usePoll } from '../api'
 import Icon from '../Icon'
 import { APPS, appOf, shortUrl, typeMs, useTypewriter } from './director'
 
@@ -127,100 +127,44 @@ export function ComposeSheet({ scene }) {
 }
 
 /* ---------------- Browser ---------------- */
-const RESEARCH_TOOLS = ['read_webpage', 'learn_from_website', 'web_search', 'news_search']
-const hostOf = (u) => { try { return new URL(u).hostname.replace(/^www\./, '') } catch { return shortUrl(u) } }
-const safeHref = (u) => (/^https?:\/\//i.test(u || '') ? u : null)  // a page's own links are untrusted: only ever open web addresses
-const IDLE_MINUTES = 15  // the server closes an unused window after this long
-const span = (s) => (s < 90 ? `${Math.max(1, Math.round(s))}s` : `${Math.round(s / 60)} min`)
-
-/** The employee's real browser window, live. The tabs and address are the browser's own, and the picture is the page as it looks right now. Watch only. */
-export function BrowserApp({ id, name, feed, scene }) {
-  const [st] = usePoll(`/agents/${id}/browser`, 1500, [id])
-  const research = useMemo(() => feed.filter((e) => RESEARCH_TOOLS.includes(e.tool)).slice(-12).reverse(), [feed])
-  const lastShot = useMemo(() => [...feed].reverse().find((e) => e.tool.startsWith('browser_') && e.detail?.shot), [feed])
-  const [view, setView] = useState('window')
-  useEffect(() => { if (scene?.kind === 'search' || scene?.kind === 'browse') setView('research'); else if (scene?.kind === 'shot') setView('window') }, [scene?.key]) // eslint-disable-line
-  return view === 'research'
-    ? <Research items={research} name={name} onBack={() => setView('window')} />
-    : <BrowserWindow id={id} name={name} st={st} lastShot={lastShot} researchCount={research.length} onResearch={() => setView('research')} />
-}
-
-function BrowserWindow({ id, name, st, lastShot, researchCount, onResearch }) {
-  const open = !!st?.open
-  const [gen, setGen] = useState(0)    // a new connection each time the window opens...
-  const [retry, setRetry] = useState(0) // ...and after a dropped one
-  const was = useRef(false)
-  useEffect(() => { if (open && !was.current) setGen((n) => n + 1); was.current = open }, [open])
-  const tabs = st?.tabs || []
-  const url = st?.url || ''
-  const blank = !url || url === 'about:blank'
-  const secure = /^https:/i.test(url)
-  const idle = st?.idle_seconds || 0
+export function BrowserApp({ feed, scene }) {
+  const pages = useMemo(() => feed.filter((e) => (['read_webpage', 'learn_from_website', 'web_search', 'news_search'].includes(e.tool) || (e.tool.startsWith('browser_') && e.detail?.shot)) && e.id !== scene?.eid).map((e) => {
+    const d = e.detail || {}, a = d.args || {}
+    if (e.tool.startsWith('browser_')) return { id: e.id, kind: 'shot', title: d.title || shortUrl(d.url), url: d.url || '', shot: d.shot, at: d.at, ts: e.ts }
+    return e.tool.includes('search') ? { id: e.id, kind: 'search', title: `${a.query || 'Search'} - Search`, url: `search://${a.query || ''}`, query: a.query, results: d.results || [], ts: e.ts }
+      : { id: e.id, kind: 'page', title: d.title || shortUrl(d.url), url: d.url || a.url || '', text: d.snippet, ts: e.ts }
+  }).slice(-6), [feed, scene?.eid])
+  const [active, setActive] = useState(null)
+  const live = scene && (scene.kind === 'browse' || scene.kind === 'search' || scene.kind === 'shot')
+  useEffect(() => { if (live) setActive('live') }, [scene?.key]) // eslint-disable-line
+  const cur = live && active === 'live' ? { id: 'live', kind: scene.kind === 'search' ? 'search' : scene.kind === 'shot' ? 'shot' : 'page', shot: scene.shot, at: scene.at, title: scene.title || scene.query || shortUrl(scene.url), url: scene.kind === 'search' ? `search://${scene.query}` : scene.url, text: scene.text, query: scene.query, results: scene.results } : pages.find((p) => p.id === active) || pages[pages.length - 1]
+  const addr = cur ? (cur.kind === 'search' ? `Search the web: ${cur.query}` : cur.url) : ''
+  const typed = useTypewriter(addr, 900, live && active === 'live')
+  const [loaded, setLoaded] = useState(true)
+  useEffect(() => { if (!live) return undefined; setLoaded(false); const t = setTimeout(() => setLoaded(true), 1500); return () => clearTimeout(t) }, [scene?.key]) // eslint-disable-line
+  const showTyped = live && active === 'live' && typed.length < addr.length
   return (
     <div className="ox-browser">
       <div className="ox-tabs">
-        {open ? tabs.map((t, i) => (
-          <div key={i} className={`tab ${t.active ? 'on' : ''}`} title={t.url}>
-            <span className="fav">{(hostOf(t.url).slice(0, 1) || '·').toUpperCase()}</span><span>{t.title || hostOf(t.url) || 'New tab'}</span>
-          </div>
-        )) : <div className="tab on"><span className="fav">·</span><span>No window</span></div>}
-        <button className="ox-seg" onClick={onResearch}>Research{researchCount > 0 && <b>{researchCount}</b>}</button>
+        {pages.map((p) => <button key={p.id} className={`tab ${cur?.id === p.id ? 'on' : ''}`} onClick={() => setActive(p.id)}><span className="fav">{(p.kind === 'search' ? 'S' : shortUrl(p.url).slice(0, 1) || '·').toUpperCase()}</span><span>{p.title}</span></button>)}
+        {live && <button className={`tab ${active === 'live' ? 'on' : ''}`} onClick={() => setActive('live')}><span className="fav">{(scene.kind === 'search' ? 'S' : shortUrl(scene.url).slice(0, 1)).toUpperCase()}</span><span>{!loaded ? 'Loading…' : cur?.title}</span></button>}
       </div>
-      <div className="ox-addr">
-        <div className="pill">
-          {open ? (blank ? <em>New tab</em> : <><Icon name={secure ? 'lock' : 'globe'} size={12} /><span>{url.replace(/^https?:\/\//i, '')}</span></>) : <em>Not open</em>}
-        </div>
-        {open && <span className="ox-live" title={`This is ${name}'s real browser window, shown live. You can watch it but not use it.`}><i />Live</span>}
-      </div>
-      <div className={`ox-load ${open && st.loading ? 'on' : ''}`} />
+      <div className="ox-addr"><span className="nav">‹</span><span className="nav">›</span><span className="nav">⟳</span>
+        <div className="pill"><Icon name="link" size={12} />{addr ? (showTyped ? typed : addr) : <em>Search or enter website name</em>}{showTyped && <i className="ox-caret dark" />}</div></div>
+      <div className={`ox-load ${live && active === 'live' && !loaded ? 'on' : ''}`} />
       <div className="ox-page">
-        {!st ? null : open ? (
-          <>
-            <div className="ox-view"><img key={`${gen}-${retry}`} src={`/api/agents/${id}/browser/live`} alt={`${name}'s browser window, live`} draggable={false}
-              onError={() => setTimeout(() => setRetry((n) => n + 1), 1500)} /></div>
-            <div className="ox-foot">{idle < 15 ? `${name} is using this window` : `Not used for ${span(idle)} · closes in ${span(st.closes_in || 0)}`}</div>
-          </>
-        ) : (
-          <div className="ox-closed">
-            <p className="ox-hint">{st.mode === 'off' ? 'The browser is switched off for the company (Settings → Browser).' : `${name} opens a window when they browse a website. It closes after ${Math.round(IDLE_MINUTES)} minutes of not being used.`}</p>
-            {lastShot ? <div className="ox-view dim"><img src={lastShot.detail.shot} alt="The last page seen in this window" /><span className="ox-badge">Window closed · last seen {ago(lastShot.ts)}</span></div>
-              : <div className="ox-empty"><Icon name="globe" size={34} /><b>No browser window open</b></div>}
-          </div>
-        )}
+        {!cur ? <div className="ox-empty"><Icon name="globe" size={34} /><b>Nothing open</b><span>Pages and searches appear here as they use the web.</span></div>
+          : live && active === 'live' && !loaded ? null
+            : cur.kind === 'shot' ? (
+              <div className="ox-shot"><img src={cur.shot} alt={`Screenshot of ${cur.title || cur.url}`} />{cur.at && <i className="ox-ring" key={cur.id} style={{ left: `${cur.at.x * 100}%`, top: `${cur.at.y * 100}%` }} />}</div>
+            ) : cur.kind === 'search' ? (
+              <div className="ox-serp"><h2>Results for “{cur.query}”</h2>{(cur.results || []).length === 0 && <p className="muted small">No results were kept for this search.</p>}
+                {(cur.results || []).map((r, i) => <div key={i} className="res" style={{ animationDelay: `${i * 90}ms` }}><small>{shortUrl(r.url)}</small><b>{r.title}</b><p>{r.snippet}</p></div>)}</div>
+            ) : (
+              <article className="ox-article"><small>{shortUrl(cur.url)}</small><h1>{cur.title}</h1><p>{cur.text || 'The page text was not kept.'}</p></article>
+            )}
       </div>
     </div>
-  )
-}
-
-function Research({ items, name, onBack }) {
-  return (
-    <div className="ox-browser">
-      <div className="ox-rhead"><div><b>Research</b><span>Searches and page reads are fetched in the background, so they never open in the browser window.</span></div><button className="ox-seg" onClick={onBack}>Browser window</button></div>
-      <div className="ox-page ox-research">
-        {items.length === 0 ? <div className="ox-empty"><Icon name="search" size={34} /><b>Nothing researched yet</b><span>{name}'s web searches and page reads appear here.</span></div>
-          : items.map((e) => <ResearchCard key={e.id} e={e} />)}
-      </div>
-    </div>
-  )
-}
-
-function ResearchCard({ e }) {
-  const d = e.detail || {}, a = d.args || {}
-  const search = e.tool.includes('search')
-  const url = d.url || a.url || ''
-  const href = safeHref(url)
-  return (
-    <article className="ox-card">
-      <header><Icon name={search ? 'search' : 'globe'} size={13} /><b>{search ? `Searched for “${a.query || ''}”` : `Read ${hostOf(url) || 'a page'}`}</b><time>{ago(e.ts)}</time></header>
-      {search ? ((d.results || []).length === 0 ? <p className="muted small">No results were kept for this search.</p>
-        : (d.results || []).map((r, i) => (
-          <div className="res" key={i}><small>{hostOf(r.url)}</small>
-            {safeHref(r.url) ? <a href={r.url} target="_blank" rel="noopener noreferrer">{r.title || r.url}</a> : <b>{r.title || r.url}</b>}
-            {r.snippet && <p>{r.snippet}</p>}</div>
-        )))
-        : <>{d.title && <h3>{d.title}</h3>}<p>{d.snippet || 'The page text was not kept.'}</p>
-          {href && <a className="open" href={href} target="_blank" rel="noopener noreferrer">Open the page <Icon name="external" size={12} /></a>}</>}
-    </article>
   )
 }
 

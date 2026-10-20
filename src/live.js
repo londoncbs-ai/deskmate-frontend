@@ -28,7 +28,6 @@ export const liveOk = () => ok
 
 /** Which tables each screen's data comes from. Addresses not listed here keep polling as before. */
 const MAP = [
-  [/^\/agents\/\d+\/browser/, []],  // a live window is not a database table: keep polling
   [/^\/agents\/\d+\/activity/, ['agent_activity']],
   [/^\/agents\/\d+\/status/, ['duties', 'agent_activity', 'meetings']],
   [/^\/agents\/\d+\/calls/, ['calls']],
