@@ -211,6 +211,7 @@ export function Home({ st }) {
     <>
       <section className="s-hero"><div className="s-wrap s-hero-grid">
         <div className="s-hero-copy">
+          {st?.authenticated ? <>
           <span className="s-pill"><i /> AI employees for your business</span>
           <h1>Hire an AI team that gets the work done.</h1>
           <p className="s-lead">Deskmates gives your business a team of AI employees. Each one has a name, an email address, a phone and a virtual computer of their own. They handle email, plan and run projects, write documents and hold voice conversations, while you stay in charge.</p>
@@ -220,6 +221,17 @@ export function Home({ st }) {
             <li><Icon name="check" size={15} /> Calls are never recorded</li>
             <li><Icon name="check" size={15} /> Emails can wait for your approval</li>
           </ul>
+          </> : <>
+          <span className="tutor-kicker">RESEARCH-LED. BUILT FOR LEARNING.</span>
+          <h1 className="tutor-title">An AI tutor.<br />An entire teaching<br /><em>engine.</em></h1>
+          <p className="s-lead tutor-lead">Research becomes a lecture. A question becomes a conversation. Meet the agent that brings academic knowledge, powerful tools and personal learning together.</p>
+          <div className="s-cta-row tutor-ctas"><Primary st={st}>Teacher workspace</Primary><Link className="s-btn big tutor-secondary" to="/product">Explore the agent <Icon name="arrow" size={16} /></Link></div>
+          <ul className="s-trust tutor-trust" aria-label="Key points">
+            <li><Icon name="check" size={15} /> Research-grounded</li>
+            <li><Icon name="check" size={15} /> Multimodal</li>
+            <li><Icon name="check" size={15} /> Built for educators</li>
+          </ul>
+          </>}
         </div>
         <HeroMock />
       </div></section>
