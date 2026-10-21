@@ -113,6 +113,12 @@ export default function Settings({ embedded = false }) {
         </label>
       </Panel>
 
+      <Panel title="Default voice for calls">
+        <label>OpenAI Realtime voice<select value={settings?.call_voice || 'marin'} onChange={async (e) => { try { await api.put('/settings', { call_voice: e.target.value }); reloadS(); setMsg('Default call voice saved.') } catch (x) { setMsg(x.message) } }}>{['marin', 'cedar', 'coral', 'sage', 'ballad', 'verse', 'ash', 'alloy', 'echo', 'shimmer'].map((v) => <option key={v} value={v}>{v}</option>)}</select>
+          <span className="faint">Used when an employee or campaign has no voice selected. Employee and campaign voice choices take priority. ElevenLabs calls use the matching language voice profile above.</span>
+        </label>
+      </Panel>
+
       <Panel title="Main link">
         <p className="muted small">The link your callers send when a customer is ready to move forward: a sign-up, booking, application or payment page. It is saved with the call, and your team (or a later text/email integration) delivers it.</p>
         <div className="actions">
